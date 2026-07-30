@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --color-body: var(--body);
+  --color-heading: var(--heading);
+  --color-muted: var(--muted);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-focus: var(--focus);
+}
+
+:root {
+  font-family: var(--font-sans);
+  color: var(--body);
+  background: var(--page);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --body: #172033;
+  --heading: #101729;
+  --muted: #5e687c;
+  --page: #f7f8fb;
+  --surface: #fff;
+  --surface-muted: #eff2f7;
+  --border: #d9deea;
+  --accent: #5b43d6;
+  --accent-hover: #4830bd;
+  --focus: #ffb000;
+}
+
+body {
+  min-width: 20rem;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--page);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --body: #e6e9f2;
+    --heading: #f8f9fd;
+    --muted: #aab2c3;
+    --page: #10131c;
+    --surface: #1b202c;
+    --surface-muted: #171b25;
+    --border: #353c4c;
+    --accent: #927df1;
+    --accent-hover: #a995ff;
+    --focus: #ffd166;
+  }
+}
