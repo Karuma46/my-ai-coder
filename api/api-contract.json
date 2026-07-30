@@ -1,0 +1,2401 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Northstar Dashboard API",
+    "version": "1.0.0",
+    "description": "Backend contract for the Northstar dashboard, project roadmaps, versions, GitHub issue-aligned todos, and WIP assignment workflows."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development backend"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "System"
+    },
+    {
+      "name": "Account"
+    },
+    {
+      "name": "Authentication"
+    },
+    {
+      "name": "Companies"
+    },
+    {
+      "name": "Dashboard"
+    },
+    {
+      "name": "Reports"
+    },
+    {
+      "name": "Projects"
+    },
+    {
+      "name": "Versions"
+    },
+    {
+      "name": "Todos"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Get API and dependency health",
+        "operationId": "getHealth",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The service is healthy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                },
+                "example": {
+                  "status": "operational",
+                  "checkedAt": "2026-07-27T12:00:00.000Z",
+                  "services": [
+                    {
+                      "name": "database",
+                      "status": "operational"
+                    },
+                    {
+                      "name": "github",
+                      "status": "operational"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register a user and issue an access token",
+        "operationId": "register",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The registered user and JWT access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Sign in with email and password",
+        "operationId": "login",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The signed-in user and JWT access token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "tags": ["Account"],
+        "summary": "Get the signed-in user",
+        "operationId": "getCurrentUser",
+        "responses": {
+          "200": {
+            "description": "The current user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                },
+                "example": {
+                  "id": "user_alex_morgan",
+                  "name": "Alex Morgan",
+                  "email": "alex@northstar.dev",
+                  "avatarUrl": null,
+                  "initials": "AM"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Account"],
+        "summary": "Update the signed-in user's profile",
+        "operationId": "updateCurrentUser",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated current user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/companies": {
+      "get": {
+        "tags": ["Companies"],
+        "summary": "List companies the signed-in user belongs to",
+        "operationId": "listCompanies",
+        "responses": {
+          "200": {
+            "description": "The current user's companies.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Company"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Companies"],
+        "summary": "Create a company and become its owner",
+        "operationId": "createCompany",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCompanyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created company.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{companyId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/CompanyId"
+        }
+      ],
+      "get": {
+        "tags": ["Companies"],
+        "summary": "Get a company",
+        "operationId": "getCompany",
+        "responses": {
+          "200": {
+            "description": "A company the current user belongs to.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Companies"],
+        "summary": "Update a company",
+        "operationId": "updateCompany",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCompanyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated company.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{companyId}/members": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/CompanyId"
+        }
+      ],
+      "get": {
+        "tags": ["Companies"],
+        "summary": "List company members",
+        "operationId": "listCompanyMembers",
+        "responses": {
+          "200": {
+            "description": "Company memberships.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CompanyMember"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Companies"],
+        "summary": "Add a registered user to a company",
+        "operationId": "addCompanyMember",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCompanyMemberRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new membership.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyMember"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/companies/{companyId}/members/{userId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/CompanyId"
+        },
+        {
+          "$ref": "#/components/parameters/UserId"
+        }
+      ],
+      "patch": {
+        "tags": ["Companies"],
+        "summary": "Change a company member's role",
+        "operationId": "updateCompanyMember",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCompanyMemberRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated membership.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyMember"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Companies"],
+        "summary": "Remove a company member",
+        "operationId": "removeCompanyMember",
+        "responses": {
+          "204": {
+            "description": "The membership was removed."
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get dashboard metrics and recent activity",
+        "operationId": "getDashboard",
+        "responses": {
+          "200": {
+            "description": "Dashboard overview data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                },
+                "example": {
+                  "metrics": [
+                    {
+                      "key": "activeProjects",
+                      "label": "Active projects",
+                      "value": 12,
+                      "detail": "3 added this month",
+                      "trend": "up"
+                    },
+                    {
+                      "key": "teamMembers",
+                      "label": "Team members",
+                      "value": 24,
+                      "detail": "Across 4 teams",
+                      "trend": "neutral"
+                    },
+                    {
+                      "key": "tasksCompleted",
+                      "label": "Tasks completed",
+                      "value": 184,
+                      "detail": "18% above target",
+                      "trend": "up"
+                    },
+                    {
+                      "key": "hoursTracked",
+                      "label": "Hours tracked",
+                      "value": 326,
+                      "detail": "This quarter",
+                      "trend": "neutral"
+                    }
+                  ],
+                  "recentActivity": [
+                    {
+                      "id": "activity_001",
+                      "type": "version.updated",
+                      "title": "Website refresh moved to review",
+                      "actorName": "Maya Chen",
+                      "occurredAt": "2026-07-27T11:48:00.000Z"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/delivery": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "Get delivery totals by reporting period",
+        "operationId": "getDeliveryReport",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive ISO 8601 date.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "description": "Inclusive ISO 8601 date.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delivery report data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryReport"
+                },
+                "example": {
+                  "from": "2026-01-01",
+                  "to": "2026-06-30",
+                  "periods": [
+                    {
+                      "label": "Jan",
+                      "value": 42
+                    },
+                    {
+                      "label": "Feb",
+                      "value": 58
+                    },
+                    {
+                      "label": "Mar",
+                      "value": 48
+                    },
+                    {
+                      "label": "Apr",
+                      "value": 72
+                    },
+                    {
+                      "label": "May",
+                      "value": 64
+                    },
+                    {
+                      "label": "Jun",
+                      "value": 86
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
+    },
+    "/api/v1/projects": {
+      "get": {
+        "tags": ["Projects"],
+        "summary": "List projects for the sidebar",
+        "operationId": "listProjects",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of projects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectList"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": "northstar-web",
+                      "companyId": "northstar",
+                      "name": "Northstar Web",
+                      "path": "/northstar-web",
+                      "versionCount": 2,
+                      "wipTodoCount": 2,
+                      "createdAt": "2026-01-15T09:00:00.000Z",
+                      "updatedAt": "2026-07-27T11:48:00.000Z"
+                    }
+                  ],
+                  "nextCursor": null
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Projects"],
+        "summary": "Create a project",
+        "operationId": "createProject",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectRequest"
+              },
+              "example": {
+                "companyId": "northstar",
+                "name": "Mobile Client",
+                "path": "/mobile-client"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created project.",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "/api/v1/projects/mobile-client"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        }
+      ],
+      "get": {
+        "tags": ["Projects"],
+        "summary": "Get a project roadmap",
+        "operationId": "getProject",
+        "responses": {
+          "200": {
+            "description": "The project with versions and WIP todos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                },
+                "example": {
+                  "id": "northstar-web",
+                  "companyId": "northstar",
+                  "name": "Northstar Web",
+                  "path": "/northstar-web",
+                  "versions": [
+                    {
+                      "id": "northstar-v2-2",
+                      "projectId": "northstar-web",
+                      "name": "v2.2",
+                      "summary": "Dashboard workflows and reporting improvements.",
+                      "status": "in-progress",
+                      "todos": [
+                        {
+                          "id": "todo-dashboard-shell",
+                          "projectId": "northstar-web",
+                          "versionId": "northstar-v2-2",
+                          "issueNumber": 142,
+                          "issueUrl": "https://github.com/northstar/web/issues/142",
+                          "pullRequestNumber": 316,
+                          "pullRequestUrl": "https://github.com/northstar/web/pull/316",
+                          "title": "Ship the responsive dashboard shell",
+                          "description": "Finish the collapsible application sidebar, top bar, and full-width routed content layout.",
+                          "status": "done",
+                          "isMerged": false,
+                          "mergedAt": null,
+                          "createdAt": "2026-07-20T08:30:00.000Z",
+                          "updatedAt": "2026-07-27T10:15:00.000Z"
+                        }
+                      ],
+                      "createdAt": "2026-07-01T09:00:00.000Z",
+                      "updatedAt": "2026-07-27T10:15:00.000Z",
+                      "releasedAt": null
+                    }
+                  ],
+                  "wipTodos": [
+                    {
+                      "id": "todo-github-sync-boundaries",
+                      "projectId": "northstar-web",
+                      "versionId": null,
+                      "issueNumber": 145,
+                      "issueUrl": "https://github.com/northstar/web/issues/145",
+                      "pullRequestNumber": null,
+                      "pullRequestUrl": null,
+                      "title": "Define GitHub synchronization boundaries",
+                      "description": "Document which issue fields are managed by the roadmap and how conflicts with GitHub updates are resolved.",
+                      "status": "draft",
+                      "isMerged": false,
+                      "mergedAt": null,
+                      "createdAt": "2026-07-26T12:00:00.000Z",
+                      "updatedAt": "2026-07-26T12:00:00.000Z"
+                    }
+                  ],
+                  "createdAt": "2026-01-15T09:00:00.000Z",
+                  "updatedAt": "2026-07-27T11:48:00.000Z"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Projects"],
+        "summary": "Update project metadata",
+        "operationId": "updateProject",
+        "x-ui-usage": "The project settings page uses this endpoint to update the project name and folder path.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProjectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated project.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Projects"],
+        "summary": "Delete a project and its roadmap",
+        "operationId": "deleteProject",
+        "x-ui-usage": "Supporting CRUD operation; no delete control is currently exposed.",
+        "responses": {
+          "204": {
+            "description": "The project was deleted."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/versions": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        }
+      ],
+      "post": {
+        "tags": ["Versions"],
+        "summary": "Add a version to a project",
+        "operationId": "createVersion",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVersionRequest"
+              },
+              "example": {
+                "name": "v2.3",
+                "summary": "GitHub synchronization and roadmap permissions."
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created pending version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/versions/{versionId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        },
+        {
+          "$ref": "#/components/parameters/VersionId"
+        }
+      ],
+      "get": {
+        "tags": ["Versions"],
+        "summary": "Get one version with its todos",
+        "operationId": "getVersion",
+        "responses": {
+          "200": {
+            "description": "The requested version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectVersion"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Versions"],
+        "summary": "Update version metadata or workflow status",
+        "operationId": "updateVersion",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVersionRequest"
+              },
+              "example": {
+                "status": "complete"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Versions"],
+        "summary": "Delete a version",
+        "operationId": "deleteVersion",
+        "x-ui-usage": "The version card exposes this action only for pending versions and requires confirmation.",
+        "responses": {
+          "204": {
+            "description": "The version was deleted."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/versions/{versionId}/release": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        },
+        {
+          "$ref": "#/components/parameters/VersionId"
+        }
+      ],
+      "post": {
+        "tags": ["Versions"],
+        "summary": "Release a completed version",
+        "operationId": "releaseVersion",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseVersionRequest"
+              },
+              "example": {
+                "releaseNotes": "Accessibility and performance hardening."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The released version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectVersion"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/versions/{versionId}/todos": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        },
+        {
+          "$ref": "#/components/parameters/VersionId"
+        }
+      ],
+      "post": {
+        "tags": ["Todos"],
+        "summary": "Create a todo in a version",
+        "operationId": "createVersionTodo",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVersionTodoRequest"
+              },
+              "example": {
+                "title": "Add synchronization status indicator",
+                "description": "Show whether roadmap changes are saved locally, syncing, or fully synchronized."
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created draft todo and associated issue metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTodo"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/wip/todos": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        }
+      ],
+      "post": {
+        "tags": ["Todos"],
+        "summary": "Create an unassigned draft todo in WIP",
+        "operationId": "createWipTodo",
+        "x-ui-usage": "The WIP column uses this endpoint to create unassigned draft todos.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWipTodoRequest"
+              },
+              "example": {
+                "title": "Define GitHub synchronization boundaries",
+                "description": "Document which issue fields are managed by the roadmap and how conflicts are resolved."
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created draft todo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTodo"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/todos/{todoId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        },
+        {
+          "$ref": "#/components/parameters/TodoId"
+        }
+      ],
+      "get": {
+        "tags": ["Todos"],
+        "summary": "Get todo details",
+        "operationId": "getTodo",
+        "responses": {
+          "200": {
+            "description": "The requested todo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTodo"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Todos"],
+        "summary": "Update todo details or status",
+        "operationId": "updateTodo",
+        "x-ui-usage": "The todo item uses this endpoint to mark an assigned draft todo as planned. That transition creates its branch.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTodoRequest"
+              },
+              "example": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated todo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTodo"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Todos"],
+        "summary": "Delete a todo",
+        "operationId": "deleteTodo",
+        "x-ui-usage": "Todo items expose this action only for draft todos and require confirmation.",
+        "responses": {
+          "204": {
+            "description": "The todo was deleted."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/todos/{todoId}/assign": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        },
+        {
+          "$ref": "#/components/parameters/TodoId"
+        }
+      ],
+      "post": {
+        "tags": ["Todos"],
+        "summary": "Assign a WIP todo to a version",
+        "operationId": "assignTodoToVersion",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignTodoRequest"
+              },
+              "example": {
+                "versionId": "northstar-v2-2"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The assigned todo. Its status is changed from draft to planned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTodo"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{projectId}/todos/{todoId}/merge": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        },
+        {
+          "$ref": "#/components/parameters/TodoId"
+        }
+      ],
+      "post": {
+        "tags": ["Todos"],
+        "summary": "Mark a completed todo as merged",
+        "operationId": "mergeTodo",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeTodoRequest"
+              },
+              "example": {
+                "mergeCommitSha": "f2d85c18d3a984706bdc7a875c2386dd1428cb24"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The merged todo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectTodo"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "parameters": {
+      "CompanyId": {
+        "name": "companyId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        },
+        "example": "acme"
+      },
+      "UserId": {
+        "name": "userId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "ProjectId": {
+        "name": "projectId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        },
+        "example": "northstar-web"
+      },
+      "VersionId": {
+        "name": "versionId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        },
+        "example": "northstar-v2-2"
+      },
+      "TodoId": {
+        "name": "todoId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        },
+        "example": "todo-dashboard-shell"
+      }
+    },
+    "schemas": {
+      "Health": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status", "checkedAt", "services"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["operational", "degraded", "unavailable"]
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "status"],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["operational", "degraded", "unavailable"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "companyId",
+          "name",
+          "email",
+          "avatarUrl",
+          "initials",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "companyId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "avatarUrl": {
+            "type": ["string", "null"],
+            "format": "uri"
+          },
+          "initials": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "email", "password"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 1024
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["email", "password"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        }
+      },
+      "UpdateMeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "avatarUrl": {
+            "type": ["string", "null"],
+            "format": "uri"
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["accessToken", "tokenType", "expiresIn", "user"],
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "tokenType": {
+            "type": "string",
+            "const": "bearer"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        }
+      },
+      "CompanyRole": {
+        "type": "string",
+        "enum": ["owner", "member"]
+      },
+      "Company": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "role",
+          "memberCount",
+          "projectCount",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/CompanyRole"
+          },
+          "memberCount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "projectCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateCompanyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        }
+      },
+      "UpdateCompanyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        }
+      },
+      "CompanyMember": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["user", "role", "joinedAt"],
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/User"
+          },
+          "role": {
+            "$ref": "#/components/schemas/CompanyRole"
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AddCompanyMemberRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["email"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "$ref": "#/components/schemas/CompanyRole",
+            "default": "member"
+          }
+        }
+      },
+      "UpdateCompanyMemberRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role"],
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/CompanyRole"
+          }
+        }
+      },
+      "Dashboard": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["metrics", "recentActivity"],
+        "properties": {
+          "metrics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardMetric"
+            }
+          },
+          "recentActivity": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActivityItem"
+            }
+          }
+        }
+      },
+      "DashboardMetric": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "label", "value", "detail", "trend"],
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "activeProjects",
+              "teamMembers",
+              "tasksCompleted",
+              "hoursTracked"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "trend": {
+            "type": "string",
+            "enum": ["up", "down", "neutral"]
+          }
+        }
+      },
+      "ActivityItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "title", "actorName", "occurredAt"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "actorName": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DeliveryReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to", "periods"],
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date"
+          },
+          "to": {
+            "type": "string",
+            "format": "date"
+          },
+          "periods": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["label", "value"],
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        }
+      },
+      "ProjectSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "companyId",
+          "name",
+          "path",
+          "versionCount",
+          "wipTodoCount",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "companyId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "versionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wipTodoCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ProjectList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["items", "nextCursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectSummary"
+            }
+          },
+          "nextCursor": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "Project": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "companyId",
+          "name",
+          "path",
+          "versions",
+          "wipTodos",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "companyId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "An opaque display path selected by the user. It does not grant server filesystem access."
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectVersion"
+            }
+          },
+          "wipTodos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectTodo"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ProjectVersion": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "projectId",
+          "name",
+          "summary",
+          "status",
+          "todos",
+          "createdAt",
+          "updatedAt",
+          "releasedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "status": {
+            "$ref": "#/components/schemas/VersionStatus"
+          },
+          "todos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectTodo"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "releasedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          }
+        }
+      },
+      "ProjectTodo": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "projectId",
+          "versionId",
+          "issueNumber",
+          "issueUrl",
+          "pullRequestNumber",
+          "pullRequestUrl",
+          "title",
+          "description",
+          "status",
+          "isMerged",
+          "mergedAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "versionId": {
+            "type": ["string", "null"],
+            "description": "Null while the todo is in WIP."
+          },
+          "issueNumber": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The associated GitHub issue number or a backend-reserved issue number."
+          },
+          "issueUrl": {
+            "type": ["string", "null"],
+            "format": "uri",
+            "description": "The GitHub issue URL when repository integration is configured."
+          },
+          "pullRequestNumber": {
+            "type": ["integer", "null"],
+            "minimum": 1,
+            "description": "The associated GitHub pull request number after the todo is completed."
+          },
+          "pullRequestUrl": {
+            "type": ["string", "null"],
+            "format": "uri",
+            "description": "The GitHub pull request URL after the todo is completed."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "status": {
+            "$ref": "#/components/schemas/TodoStatus"
+          },
+          "isMerged": {
+            "type": "boolean"
+          },
+          "mergeCommitSha": {
+            "type": ["string", "null"]
+          },
+          "mergedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "VersionStatus": {
+        "type": "string",
+        "enum": ["pending", "ready", "in-progress", "complete", "released"]
+      },
+      "TodoStatus": {
+        "type": "string",
+        "enum": ["draft", "planned", "in-progress", "blocked", "failed", "done"]
+      },
+      "CreateProjectRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["companyId", "name", "path"],
+        "properties": {
+          "companyId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        }
+      },
+      "UpdateProjectRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        }
+      },
+      "CreateVersionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "summary"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        }
+      },
+      "UpdateVersionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "ready", "in-progress", "complete"],
+            "description": "Use the release endpoint for the released state."
+          }
+        }
+      },
+      "ReleaseVersionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "releaseNotes": {
+            "type": "string",
+            "maxLength": 10000
+          }
+        }
+      },
+      "CreateVersionTodoRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "description"],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "status": {
+            "type": "string",
+            "const": "draft",
+            "default": "draft",
+            "description": "New todos always start as drafts."
+          }
+        }
+      },
+      "CreateWipTodoRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "description"],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          }
+        }
+      },
+      "UpdateTodoRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          },
+          "status": {
+            "$ref": "#/components/schemas/TodoStatus"
+          }
+        }
+      },
+      "AssignTodoRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["versionId"],
+        "properties": {
+          "versionId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "MergeTodoRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mergeCommitSha": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{40}$"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["field", "message"],
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "requestId": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Authentication is required or the access token is invalid.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "UNAUTHORIZED",
+                "message": "Authentication is required.",
+                "requestId": "req_01J3X8Y7P4"
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The signed-in user is not allowed to perform this operation.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "FORBIDDEN",
+                "message": "Only company owners can manage members.",
+                "requestId": "req_01J3X8Y7P9"
+              }
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "The request failed validation.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "The request contains invalid fields.",
+                "details": [
+                  {
+                    "field": "name",
+                    "message": "Name is required."
+                  }
+                ],
+                "requestId": "req_01J3X8Y7P5"
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "The requested resource was not found.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "NOT_FOUND",
+                "message": "The requested resource was not found.",
+                "requestId": "req_01J3X8Y7P6"
+              }
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "The operation conflicts with the resource's current state.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "INVALID_STATE_TRANSITION",
+                "message": "The resource cannot perform this operation in its current state.",
+                "requestId": "req_01J3X8Y7P7"
+              }
+            }
+          }
+        }
+      },
+      "ServiceUnavailable": {
+        "description": "The service or a required dependency is unavailable.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "SERVICE_UNAVAILABLE",
+                "message": "A required service is currently unavailable.",
+                "requestId": "req_01J3X8Y7P8"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-websocket-events": {
+    "/api/v1/agent-runs/events": {
+      "description": "Streams terminal agent-run updates to currently connected clients.",
+      "queryParameters": {
+        "projectId": {
+          "type": "string",
+          "required": true,
+          "description": "Only events for this authorized project are sent."
+        },
+        "token": {
+          "type": "string",
+          "required": true,
+          "description": "A JWT access token for WebSocket authentication."
+        }
+      },
+      "messages": {
+        "agent-run.completed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "runId",
+            "projectId",
+            "todoId",
+            "status",
+            "completedAt",
+            "error"
+          ],
+          "properties": {
+            "type": {
+              "const": "agent-run.completed"
+            },
+            "runId": {
+              "type": "string"
+            },
+            "projectId": {
+              "type": "string"
+            },
+            "todoId": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": ["succeeded", "failed"]
+            },
+            "completedAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "error": {
+              "type": ["string", "null"]
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-business-rules": [
+    "Users authenticate with an email and password and receive a signed JWT access token.",
+    "A user can belong to multiple companies with the owner or member role.",
+    "Only company owners can add, remove, or change the role of company members.",
+    "Every company must retain at least one owner.",
+    "Every project belongs to exactly one company and is visible only to that company's members.",
+    "New versions start with status pending and planned todos are not dispatched until the version is ready or in-progress.",
+    "All newly created todos start with status draft and do not create a branch.",
+    "WIP todos have versionId null and status draft.",
+    "Changing an assigned todo from draft to planned creates its branch from the version branch.",
+    "A WIP todo can only be assigned to a pending, ready, or in-progress version. Assignment sets status to planned and creates its branch.",
+    "Todos cannot be added to complete or released versions.",
+    "Only pending versions can be deleted; deleting one also removes its todos.",
+    "Only draft todos can be deleted.",
+    "Project versions and their todos are ordered by createdAt descending.",
+    "Only a todo with status done and isMerged false can be merged.",
+    "Only a version with status complete can be released. Releasing sets status to released and releasedAt to the server timestamp.",
+    "Released versions are immutable except for administrative correction.",
+    "The backend assigns IDs, timestamps, issueNumber, and issueUrl. Clients must not generate authoritative values for these fields.",
+    "Mutating endpoints should execute atomically and return HTTP 409 when a concurrent or invalid workflow transition is detected."
+  ],
+  "x-frontend-integration": {
+    "apiUtility": "src/utilities/useApi.tsx",
+    "basePath": "/api/v1",
+    "responseShape": "Successful response bodies are the schema shown for each endpoint. useApi wraps the Axios response as { data: responseBody }; the backend should not add another data wrapper.",
+    "errorShape": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "The request contains invalid fields.",
+        "details": [
+          {
+            "field": "name",
+            "message": "Name is required."
+          }
+        ],
+        "requestId": "req_01J3X8Y7P5"
+      }
+    },
+    "uploads": "No file-upload endpoint is required by the current UI. The project folder picker submits only a display path string."
+  }
+}

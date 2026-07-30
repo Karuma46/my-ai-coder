@@ -1,0 +1,38 @@
+services:
+  redis:
+    image: redis:8.0.1-alpine
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --save
+      - "60"
+      - "1"
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6380}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  github-mcp:
+    image: "${GITHUB_MCP_IMAGE:-ghcr.io/github/github-mcp-server:v1.7.0}"
+    command:
+      - http
+      - --listen-host
+      - 0.0.0.0
+      - --port
+      - "8082"
+    environment:
+      GITHUB_PERSONAL_ACCESS_TOKEN: "${GITHUB_PERSONAL_ACCESS_TOKEN:?Set GITHUB_PERSONAL_ACCESS_TOKEN in .env}"
+      GITHUB_TOOLSETS: "${GITHUB_TOOLSETS:-repos,issues,pull_requests,actions}"
+    ports:
+      - "127.0.0.1:${GITHUB_MCP_PORT:-8082}:8082"
+    restart: unless-stopped
+
+volumes:
+  redis-data:
